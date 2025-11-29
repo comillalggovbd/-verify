@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ড্যাশবোর্ড - Comilla LG Admin</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #e9ecef; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 15px; margin-bottom: 20px; }
+        .container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { color: #007bff; }
+        #logoutButton { background-color: #dc3545; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>স্বাগতম, অ্যাডমিন!</h1>
+        <button id="logoutButton">লগআউট</button>
+    </div>
+    <div class="container">
+        <h2>আবেদন এবং সনদ ব্যবস্থাপনা</h2>
+        <p>এইখানে আপনি নতুন আবেদনগুলো দেখতে পাবেন, সেগুলো অনুমোদন করতে পারবেন এবং সনদের জন্য HTML ফাইল তৈরি করতে পারবেন।</p>
+        
+        <h3>সনদ ভেরিফিকেশন লিংক</h3>
+        <p>সনদ তৈরি হয়ে গেলে, তার ইউনিক ID ব্যবহার করে আপনি GitHub এ ফাইল আপলোড করবেন এবং সেই লিংক দিয়ে QR কোড তৈরি করবেন।</p>
+        <p>যেমন: <code>https://[আপনার GitHub URL]/sonod_1001.html</code></p>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+
+    <script>
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyA1fCD4rPhcosqGzk6iHltDI3ePFR4JNEY",
+  authDomain: "comillalg-gov-bd.firebaseapp.com",
+  projectId: "comillalg-gov-bd",
+  storageBucket: "comillalg-gov-bd.firebasestorage.app",
+  messagingSenderId: "906711849504",
+  appId: "1:906711849504:web:d4dc33382d37abe9d93a45",
+  measurementId: "G-F9GZKXH3QL"
+};
+
+        // ২. Firebase অ্যাপ ইনিশিয়ালাইজ করুন
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = app.auth();
+
+        // ৩. নিরাপত্তা চেক: ইউজার লগইন করা আছে কিনা?
+        auth.onAuthStateChanged((user) => {
+            if (!user) {
+                // ইউজার লগইন করা না থাকলে লগইন পেজে ফেরত পাঠানো
+                window.location.href = 'index.html';
+            }
+        });
+
+        // ৪. লগআউট ফাংশন
+        document.getElementById('logoutButton').addEventListener('click', () => {
+            auth.signOut().then(() => {
+                // সফলভাবে লগআউট হলে লগইন পেজে ফেরত পাঠানো
+                window.location.href = 'index.html';
+            }).catch((error) => {
+                console.error("Logout failed:", error);
+            });
+        });
+    </script>
+</body>
+</html>
