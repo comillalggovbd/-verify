@@ -27,7 +27,8 @@
         <button id="login-btn" onclick="showForm('login')">লগইন 🔑</button>
 
         <div id="form-container">
-            </div>
+            <!-- ফর্ম কন্টেন্ট এখানে দেখাবে -->
+        </div>
     </div>
     
     <script>
@@ -47,10 +48,13 @@ const firebaseConfig = {
         const database = firebase.database();
         const auth = firebase.auth(); 
         
-        // ----------------- Auth Logic (JavaScript Functions) -----------------
+        // ----------------- Auth State & Data Caching -----------------
         
         let currentStep = 1;
-
+        let registrationData = {}; // ধাপ ১ এর ডেটা এখানে ক্যাশ করা হবে
+        
+        // ----------------- Auth Logic (JavaScript Functions) -----------------
+        
         function showForm(type) {
             const container = document.getElementById('form-container');
             container.innerHTML = '';
@@ -61,15 +65,15 @@ const firebaseConfig = {
                     <h3>ধাপ ১: সাধারণ তথ্য পূরণ</h3>
                     <p style="color:red; font-size: 0.9em;">* চিহ্নিত ফিল্ডগুলো পূরণ করা বাধ্যতামূলক। ❗️</p>
                     
-                    <input type="text" id="nameBn" placeholder="নাম (বাংলায়) *" required>
-                    <input type="text" id="nameEn" placeholder="নাম (ইংরেজিতে) *" required>
-                    <input type="number" id="nid" placeholder="জাতীয় পরিচয়পত্র নম্বর (১০ বা ১৭ ডিজিট) *" required>
-                    <input type="tel" id="mobile" placeholder="১১ ডিজিটের মোবাইল নম্বর *" required>
+                    <input type="text" id="nameBn" placeholder="নাম (বাংলায়) *" required value="${registrationData.name_bn || ''}">
+                    <input type="text" id="nameEn" placeholder="নাম (ইংরেজিতে) *" required value="${registrationData.name_en || ''}">
+                    <input type="number" id="nid" placeholder="জাতীয় পরিচয়পত্র নম্বর (১০ বা ১৭ ডিজিট) *" required value="${registrationData.nid || ''}">
+                    <input type="tel" id="mobile" placeholder="১১ ডিজিটের মোবাইল নম্বর *" required value="${registrationData.mobile || ''}">
                     <input type="password" id="password" placeholder="পাসওয়ার্ড দিন *" required>
                     
                     <select id="accountType">
                         <option value="Upazila Admin">উপজেলা অ্যাডমিন</option>
-                        </select>
+                    </select>
                     
                     <button onclick="nextStep()">পরবর্তী 👉</button>
                 `;
@@ -83,93 +87,98 @@ const firebaseConfig = {
             }
         }
 
+        // ---------- ধাপ ১ এর ডেটা যাচাই এবং ক্যাশ ----------
         function nextStep() {
-    // ধাপ ১ থেকে তথ্য সংগ্রহ
-    const nameBn = document.getElementById('nameBn').value;
-    const nameEn = document.getElementById('nameEn').value;
-    const nid = document.getElementById('nid').value;
-    const mobile = document.getElementById('mobile').value;
-    const password = document.getElementById('password').value;
-    
-    // --- তথ্য যাচাই (Validation Check) শুরু ---
-    
-    // ১. কোনো ফিল্ড খালি কিনা যাচাই
-    if (!nameBn || !nameEn || !nid || !mobile || !password) {
-        alert("দয়া করে * চিহ্নিত সকল আবশ্যিক ফিল্ড পূরণ করুন।");
-        return; // তথ্য খালি থাকলে এখানেই ফাংশন বন্ধ হবে
-    }
-    
-    // ২. মোবাইল নম্বর ১১ ডিজিটের কিনা যাচাই
-    if (mobile.length !== 11 || isNaN(mobile)) {
-        alert("দয়া করে সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।");
-        return;
-    }
-
-    // ৩. পাসওয়ার্ডের ন্যূনতম দৈর্ঘ্য যাচাই (ঐচ্ছিক, তবে ভালো অনুশীলন)
-    if (password.length < 6) {
-        alert("পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।");
-        return;
-    }
-    
-    // --- তথ্য যাচাই শেষ ---
-    
-    // যদি সব তথ্য সঠিকভাবে পূরণ হয়, তবেই ধাপ ২ লোড হবে
-    const container = document.getElementById('form-container');
-    
-    // ধাপ ২: ঠিকানা সম্পর্কিত তথ্য
-    container.innerHTML = `
-        <h3>ধাপ ২: ঠিকানা সম্পর্কিত তথ্য</h3>
-        
-        <select id="addressType">
-            <option value="স্থায়ী">স্থায়ী ঠিকানা</option>
-            <option value="বর্তমান">বর্তমান ঠিকানা</option>
-        </select>
-        
-        <label style="display:block; margin-bottom: 5px;">জেলা: কুমিল্লা 📍</label>
-        <select id="upazila" required>
-            <option value="">উপজেলা/ পৌরসভা নির্বাচন করুন *</option>
-            <option value="চৌদ্দগ্রাম">চৌদ্দগ্রাম</option>
-            <option value="কুমিল্লা সদর">কুমিল্লা সদর</option>
-            </select>
-        
-        <button onclick="currentStep = 1; showForm('register')">পূর্ববর্তী</button>
-        <button onclick="registerSubAdmin()">নিবন্ধন করুন ✅</button>
-    `;
-    currentStep = 2;
-}
-
-
-        // ---------- মূল নিবন্ধন ফাংশন ----------
-        function registerSubAdmin() {
-            // ধাপ ১ এর ডেটা সংগ্রহ
-            const mobile = document.getElementById('mobile').value;
-            const password = document.getElementById('password').value; 
-            const nameBn = document.getElementById('nameBn').value;
-            const nid = document.getElementById('nid').value;
+            // ধাপ ১ থেকে তথ্য সংগ্রহ
+            const nameBn = document.getElementById('nameBn').value.trim();
+            const nameEn = document.getElementById('nameEn').value.trim();
+            const nid = document.getElementById('nid').value.trim();
+            const mobile = document.getElementById('mobile').value.trim();
+            const password = document.getElementById('password').value;
+            const accountType = document.getElementById('accountType').value;
             
-            // ধাপ ২ এর ডেটা সংগ্রহ
-            const addressType = document.getElementById('addressType').value;
-            const upazila = document.getElementById('upazila').value;
-            
-            // সাধারণ ভ্যালিডেশন
-            if (!mobile || !password || !nameBn || !nid || !upazila) {
-                alert("দয়া করে লাল তারা চিহ্নিত সকল ফিল্ড পূরণ করুন।");
+            // --- তথ্য যাচাই (Validation Check) ---
+            if (!nameBn || !nameEn || !nid || !mobile || !password) {
+                alert("দয়া করে * চিহ্নিত সকল আবশ্যিক ফিল্ড পূরণ করুন।");
+                return; 
+            }
+            if (mobile.length !== 11 || isNaN(mobile)) {
+                alert("দয়া করে সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।");
                 return;
             }
+            if (password.length < 6) {
+                alert("পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।");
+                return;
+            }
+            
+            // ভ্যালিডেশন সফল হলে: ডেটা ক্যাশ করুন
+            registrationData = {
+                name_bn: nameBn,
+                name_en: nameEn,
+                nid: nid,
+                mobile: mobile,
+                password: password, 
+                account_type: accountType
+            };
+
+            // ধাপ ২ লোড
+            const container = document.getElementById('form-container');
+            container.innerHTML = `
+                <h3>ধাপ ২: ঠিকানা সম্পর্কিত তথ্য</h3>
+                
+                <select id="addressType">
+                    <option value="স্থায়ী">স্থায়ী ঠিকানা</option>
+                    <option value="বর্তমান">বর্তমান ঠিকানা</option>
+                </select>
+                
+                <label style="display:block; margin-bottom: 5px;">জেলা: কুমিল্লা 📍</label>
+                <select id="upazila" required>
+                    <option value="">উপজেলা/ পৌরসভা নির্বাচন করুন *</option>
+                    <option value="চৌদ্দগ্রাম">চৌদ্দগ্রাম</option>
+                    <option value="কুমিল্লা সদর">কুমিল্লা সদর</option>
+                    <!-- অন্যান্য উপজেলার তালিকা -->
+                </select>
+                
+                <button onclick="currentStep = 1; showForm('register')">পূর্ববর্তী</button>
+                <button onclick="registerSubAdmin()">নিবন্ধন করুন ✅</button>
+            `;
+            currentStep = 2;
+        }
+
+        // ---------- মূল নিবন্ধন ফাংশন (ক্যাশ করা ডেটা ব্যবহার করে) ----------
+        function registerSubAdmin() {
+            // ধাপ ২ থেকে ডেটা সংগ্রহ
+            const upazila = document.getElementById('upazila').value;
+            const addressType = document.getElementById('addressType').value;
+            
+            // চূড়ান্ত যাচাই (Final Validation)
+            if (!upazila || upazila === "") {
+                alert("দয়া করে উপজেলা/ পৌরসভা নির্বাচন করুন। এটি আবশ্যিক।");
+                return;
+            }
+
+            const mobile = registrationData.mobile;
+            const password = registrationData.password;
+            const nameBn = registrationData.name_bn;
+
+            if (!mobile || !password) {
+                 alert("নিবন্ধন ডেটা হারিয়ে গেছে। অনুগ্রহ করে আবার শুরু করুন।");
+                 return;
+            }
+
 
             // Firebase Auth এর জন্য মোবাইলকে email ফরম্যাটে পরিবর্তন
             const emailAsId = mobile + "@verifydomain.com"; 
 
+            // 1. Firebase Authentication দ্বারা অ্যাকাউন্ট তৈরি
             auth.createUserWithEmailAndPassword(emailAsId, password)
                 .then((userCredential) => {
                     const user = userCredential.user;
                     
-                    // Realtime Database এ অতিরিক্ত তথ্য সংরক্ষণ
+                    // 2. Realtime Database এ অতিরিক্ত তথ্য সংরক্ষণ
                     database.ref('sub_admin_requests/' + user.uid).set({
-                        name_bn: nameBn,
-                        nid: nid,
-                        mobile: mobile,
-                        account_type: document.getElementById('accountType').value, 
+                        ...registrationData, // ক্যাশ করা ডেটা
+                        password: null, // নিরাপত্তা কারণে পাসওয়ার্ড সেভ করা উচিত না
                         upazila: upazila,
                         address_type: addressType,
                         status: 'Pending', // অনুমোদনের জন্য অপেক্ষারত
@@ -227,4 +236,5 @@ const firebaseConfig = {
         }
     </script>
 </body>
-  </html>
+</html>
+
