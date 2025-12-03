@@ -88,110 +88,150 @@ const firebaseConfig = {
         }
 
         // ---------- ধাপ ১ এর ডেটা যাচাই এবং ক্যাশ ----------
-        function nextStep() {
-            // ধাপ ১ থেকে তথ্য সংগ্রহ
-            const nameBn = document.getElementById('nameBn').value.trim();
-            const nameEn = document.getElementById('nameEn').value.trim();
-            const nid = document.getElementById('nid').value.trim();
-            const mobile = document.getElementById('mobile').value.trim();
-            const password = document.getElementById('password').value;
-            const accountType = document.getElementById('accountType').value;
-            
-            // --- তথ্য যাচাই (Validation Check) ---
-            if (!nameBn || !nameEn || !nid || !mobile || !password) {
-                alert("দয়া করে * চিহ্নিত সকল আবশ্যিক ফিল্ড পূরণ করুন।");
-                return; 
-            }
-            if (mobile.length !== 11 || isNaN(mobile)) {
-                alert("দয়া করে সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।");
-                return;
-            }
-            if (password.length < 6) {
-                alert("পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।");
-                return;
-            }
-            
-            // ভ্যালিডেশন সফল হলে: ডেটা ক্যাশ করুন
-            registrationData = {
-                name_bn: nameBn,
-                name_en: nameEn,
-                nid: nid,
-                mobile: mobile,
-                password: password, 
-                account_type: accountType
-            };
+        // ---------- ধাপ ১ এর ডেটা যাচাই এবং ক্যাশ (UPDATED FOR STEP 2) ----------
+function nextStep() {
+    // ধাপ ১ থেকে তথ্য সংগ্রহ
+    const nameBn = document.getElementById('nameBn').value.trim();
+    const nameEn = document.getElementById('nameEn').value.trim();
+    const nid = document.getElementById('nid').value.trim();
+    const mobile = document.getElementById('mobile').value.trim();
+    const password = document.getElementById('password').value;
+    const accountType = document.getElementById('accountType').value;
+    
+    // --- তথ্য যাচাই (Validation Check) ---
+    if (!nameBn || !nameEn || !nid || !mobile || !password) {
+        alert("দয়া করে * চিহ্নিত সকল আবশ্যিক ফিল্ড পূরণ করুন।");
+        return; 
+    }
+    if (mobile.length !== 11 || isNaN(mobile)) {
+        alert("দয়া করে সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।");
+        return;
+    }
+    if (password.length < 6) {
+        alert("পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।");
+        return;
+    }
+    
+    // ভ্যালিডেশন সফল হলে: ডেটা ক্যাশ করুন
+    registrationData = {
+        name_bn: nameBn,
+        name_en: nameEn,
+        nid: nid,
+        mobile: mobile,
+        password: password, 
+        account_type: accountType
+    };
 
-            // ধাপ ২ লোড
-            const container = document.getElementById('form-container');
-            container.innerHTML = `
-                <h3>ধাপ ২: ঠিকানা সম্পর্কিত তথ্য</h3>
-                
-                <select id="addressType">
-                    <option value="স্থায়ী">স্থায়ী ঠিকানা</option>
-                    <option value="বর্তমান">বর্তমান ঠিকানা</option>
-                </select>
-                
-                <label style="display:block; margin-bottom: 5px;">জেলা: কুমিল্লা 📍</label>
-                <select id="upazila" required>
-                    <option value="">উপজেলা/ পৌরসভা নির্বাচন করুন *</option>
-                    <option value="চৌদ্দগ্রাম">চৌদ্দগ্রাম</option>
-                    <option value="কুমিল্লা সদর">কুমিল্লা সদর</option>
-                    <!-- অন্যান্য উপজেলার তালিকা -->
-                </select>
-                
-                <button onclick="currentStep = 1; showForm('register')">পূর্ববর্তী</button>
-                <button onclick="registerSubAdmin()">নিবন্ধন করুন ✅</button>
-            `;
-            currentStep = 2;
-        }
+    // ধাপ ২ লোড: সমস্ত নতুন ফিল্ড এখানে যুক্ত করা হয়েছে
+    const container = document.getElementById('form-container');
+    container.innerHTML = `
+        <h3>ধাপ ২: অফিস এবং ঠিকানা সম্পর্কিত তথ্য</h3>
+        <p style="color:red; font-size: 0.9em;">* চিহ্নিত ফিল্ডগুলো পূরণ করা বাধ্যতামূলক। ❗️</p>
+
+        <select id="addressTypeSelect">
+            <option value="City Corporation">সিটি কর্পোরেশন</option>
+            <option value="Municipality">পৌরসভা</option>
+            <option value="Union">ইউনিয়ন</option>
+        </select>
+
+        <!-- বিভাগ নির্বাচন (ডামি) -->
+        <label for="division_id">বিভাগ *</label>
+        <select id="division_id" required>
+            <option value="">বিভাগ নির্বাচন করুন</option>
+            <option value="Dhaka">ঢাকা (DHAKA)</option>
+            <option value="Chattogram">চট্টগ্রাম (CHATTOGRAM)</option>
+            <!-- অন্য বিভাগগুলো যোগ করুন -->
+        </select>
+
+        <!-- জেলা নির্বাচন (ডামি) -->
+        <label for="district_id">জেলা *</label>
+        <select id="district_id" required>
+            <option value="">জেলা নির্বাচন করুন</option>
+            <option value="Cumilla">কুমিল্লা</option>
+            <option value="Dhaka_Dist">ঢাকা</option>
+            <!-- আপনার প্রয়োজনীয় জেলাগুলো যোগ করুন -->
+        </select>
+        
+        <!-- থানা / উপজেলা নির্বাচন (ডামি) -->
+        <label for="thana_id">থানা / উপজেলা *</label>
+        <select id="thana_id" required>
+            <option value="">থানা / উপজেলা নির্বাচন করুন</option>
+            <option value="Chouddagram">চৌদ্দগ্রাম</option>
+            <option value="Daudkandi">দাউদকান্দি</option>
+            <!-- আপনার প্রয়োজনীয় থানাগুলো যোগ করুন -->
+        </select>
+
+        <!-- অফিস নির্বাচন (ডামি) -->
+        <label for="office_id">অফিস *</label>
+        <select id="office_id" required>
+            <option value="">অফিস নির্বাচন করুন</option>
+            <option value="Office_1">অফিস-১</option>
+            <option value="Office_2">অফিস-২</option>
+        </select>
+
+        <button onclick="currentStep = 1; showForm('register')">পূর্ববর্তী</button>
+        <button onclick="registerSubAdmin()">নিবন্ধন করুন ✅</button>
+    `;
+    currentStep = 2;
+}
+
 
         // ---------- মূল নিবন্ধন ফাংশন (ক্যাশ করা ডেটা ব্যবহার করে) ----------
-        function registerSubAdmin() {
-            // ধাপ ২ থেকে ডেটা সংগ্রহ
-            const upazila = document.getElementById('upazila').value;
-            const addressType = document.getElementById('addressType').value;
+        // ---------- মূল নিবন্ধন ফাংশন (UPDATED FOR ALL FIELDS) ----------
+function registerSubAdmin() {
+    // ধাপ ২ থেকে ডেটা সংগ্রহ
+    const addressTypeSelect = document.getElementById('addressTypeSelect').value;
+    const division_id = document.getElementById('division_id').value;
+    const district_id = document.getElementById('district_id').value;
+    const thana_id = document.getElementById('thana_id').value;
+    const office_id = document.getElementById('office_id').value;
+    
+    // চূড়ান্ত যাচাই (Final Validation for Step 2)
+    if (!addressTypeSelect || !division_id || !district_id || !thana_id || !office_id) {
+        alert("দয়া করে ধাপ ২ এর সকল আবশ্যিক ফিল্ড পূরণ করুন (ঠিকানার ধরণ, বিভাগ, জেলা, থানা/উপজেলা, ও অফিস)।");
+        return;
+    }
+
+    const mobile = registrationData.mobile;
+    const password = registrationData.password;
+    const nameBn = registrationData.name_bn;
+
+    if (!mobile || !password) {
+         alert("নিবন্ধন ডেটা হারিয়ে গেছে। অনুগ্রহ করে আবার শুরু করুন।");
+         return;
+    }
+
+    const emailAsId = mobile + "@verifydomain.com"; 
+
+    // 1. Firebase Authentication দ্বারা অ্যাকাউন্ট তৈরি
+    auth.createUserWithEmailAndPassword(emailAsId, password)
+        .then((userCredential) => {
+            const user = userCredential.user;
             
-            // চূড়ান্ত যাচাই (Final Validation)
-            if (!upazila || upazila === "") {
-                alert("দয়া করে উপজেলা/ পৌরসভা নির্বাচন করুন। এটি আবশ্যিক।");
-                return;
-            }
+            // 2. Realtime Database এ অতিরিক্ত তথ্য সংরক্ষণ
+            database.ref('sub_admin_requests/' + user.uid).set({
+                ...registrationData, // ধাপ ১ এর ক্যাশ করা ডেটা
+                password: null, // নিরাপত্তা কারণে পাসওয়ার্ড সেভ করা উচিত না
+                
+                // ধাপ ২ এর নতুন ডেটা
+                admins_address_type: addressTypeSelect,
+                division_id: division_id,
+                district_id: district_id,
+                thana_id: thana_id,
+                office_id: office_id,
 
-            const mobile = registrationData.mobile;
-            const password = registrationData.password;
-            const nameBn = registrationData.name_bn;
+                status: 'Pending',
+                created_at: firebase.database.ServerValue.TIMESTAMP
+            })
+            .then(() => {
+                showSuccessMessage(nameBn);
+            });
+        })
+        .catch((error) => {
+            alert("নিবন্ধন ব্যর্থ: " + error.message);
+        });
+}
 
-            if (!mobile || !password) {
-                 alert("নিবন্ধন ডেটা হারিয়ে গেছে। অনুগ্রহ করে আবার শুরু করুন।");
-                 return;
-            }
-
-
-            // Firebase Auth এর জন্য মোবাইলকে email ফরম্যাটে পরিবর্তন
-            const emailAsId = mobile + "@verifydomain.com"; 
-
-            // 1. Firebase Authentication দ্বারা অ্যাকাউন্ট তৈরি
-            auth.createUserWithEmailAndPassword(emailAsId, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    
-                    // 2. Realtime Database এ অতিরিক্ত তথ্য সংরক্ষণ
-                    database.ref('sub_admin_requests/' + user.uid).set({
-                        ...registrationData, // ক্যাশ করা ডেটা
-                        password: null, // নিরাপত্তা কারণে পাসওয়ার্ড সেভ করা উচিত না
-                        upazila: upazila,
-                        address_type: addressType,
-                        status: 'Pending', // অনুমোদনের জন্য অপেক্ষারত
-                        created_at: firebase.database.ServerValue.TIMESTAMP
-                    })
-                    .then(() => {
-                        showSuccessMessage(nameBn);
-                    });
-                })
-                .catch((error) => {
-                    alert("নিবন্ধন ব্যর্থ: " + error.message);
-                });
-        }
 
         // ---------- লগইন ফাংশন ----------
         function loginSubAdmin() {
