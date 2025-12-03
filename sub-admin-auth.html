@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>সাব-অ্যাডমিন প্যানেল: নিবন্ধন ও লগইন</title>
+    <style>
+        /* আপনার CSS স্টাইল এখানে যুক্ত করুন */
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; }
+        #auth-panel { max-width: 450px; margin: 50px auto; padding: 30px; background: #fff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        input, select, button { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #0056b3; }
+        h3 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 20px; }
+        .success-message { text-align: center; color: green; font-size: 1.1em; }
+    </style>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script> 
+</head>
+<body>
+
+    <div id="auth-panel">
+        <h2>কন্ট্রোল/সাব-অ্যাডমিন অথেন্টিকেশন</h2>
+
+        <button id="reg-btn" onclick="showForm('register')">নিবন্ধন ✍️</button>
+        <button id="login-btn" onclick="showForm('login')">লগইন 🔑</button>
+
+        <div id="form-container">
+            </div>
+    </div>
+    
+    <script>
+        // ----------------- Firebase Configuration -----------------
+        const firebaseConfig = {
+            // ... আপনার আসল কনফিগারেশন ডেটা এখানে বসান
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth(); 
+        
+        // ----------------- Auth Logic (JavaScript Functions) -----------------
+        
+        let currentStep = 1;
+
+        function showForm(type) {
+            const container = document.getElementById('form-container');
+            container.innerHTML = '';
+            currentStep = 1; 
+
+            if (type === 'register') {
+                container.innerHTML = `
+                    <h3>ধাপ ১: সাধারণ তথ্য পূরণ</h3>
+                    <p style="color:red; font-size: 0.9em;">* চিহ্নিত ফিল্ডগুলো পূরণ করা বাধ্যতামূলক। ❗️</p>
+                    
+                    <input type="text" id="nameBn" placeholder="নাম (বাংলায়) *" required>
+                    <input type="text" id="nameEn" placeholder="নাম (ইংরেজিতে) *" required>
+                    <input type="number" id="nid" placeholder="জাতীয় পরিচয়পত্র নম্বর (১০ বা ১৭ ডিজিট) *" required>
+                    <input type="tel" id="mobile" placeholder="১১ ডিজিটের মোবাইল নম্বর *" required>
+                    <input type="password" id="password" placeholder="পাসওয়ার্ড দিন *" required>
+                    
+                    <select id="accountType">
+                        <option value="Upazila Admin">উপজেলা অ্যাডমিন</option>
+                        </select>
+                    
+                    <button onclick="nextStep()">পরবর্তী 👉</button>
+                `;
+            } else if (type === 'login') {
+                container.innerHTML = `
+                    <h3>লগইন করুন</h3>
+                    <input type="tel" id="loginMobile" placeholder="মোবাইল নম্বর" required>
+                    <input type="password" id="loginPassword" placeholder="পাসওয়ার্ড" required>
+                    <button onclick="loginSubAdmin()">লগইন করুন 🔑</button>
+                `;
+            }
+        }
+
+        function nextStep() {
+            // ধাপ ১ এর ডেটাগুলো এখন DOM এ আছে।
+            // ভ্যালিডেশন চেক (যেমন NID/মোবাইল দৈর্ঘ্য) এখানে করা যেতে পারে।
+            
+            const container = document.getElementById('form-container');
+            
+            // ধাপ ২: ঠিকানা সম্পর্কিত তথ্য
+            container.innerHTML = `
+                <h3>ধাপ ২: ঠিকানা সম্পর্কিত তথ্য</h3>
+                
+                <select id="addressType">
+                    <option value="স্থায়ী">স্থায়ী ঠিকানা</option>
+                    <option value="বর্তমান">বর্তমান ঠিকানা</option>
+                </select>
+                
+                <label style="display:block; margin-bottom: 5px;">জেলা: কুমিল্লা 📍</label>
+                <select id="upazila" required>
+                    <option value="">উপজেলা/ পৌরসভা নির্বাচন করুন *</option>
+                    <option value="চৌদ্দগ্রাম">চৌদ্দগ্রাম</option>
+                    <option value="কুমিল্লা সদর">কুমিল্লা সদর</option>
+                    </select>
+                
+                <button onclick="currentStep = 1; showForm('register')">পূর্ববর্তী</button>
+                <button onclick="registerSubAdmin()">নিবন্ধন করুন ✅</button>
+            `;
+            currentStep = 2;
+        }
+
+        // ---------- মূল নিবন্ধন ফাংশন ----------
+        function registerSubAdmin() {
+            // ধাপ ১ এর ডেটা সংগ্রহ
+            const mobile = document.getElementById('mobile').value;
+            const password = document.getElementById('password').value; 
+            const nameBn = document.getElementById('nameBn').value;
+            const nid = document.getElementById('nid').value;
+            
+            // ধাপ ২ এর ডেটা সংগ্রহ
+            const addressType = document.getElementById('addressType').value;
+            const upazila = document.getElementById('upazila').value;
+            
+            // সাধারণ ভ্যালিডেশন
+            if (!mobile || !password || !nameBn || !nid || !upazila) {
+                alert("দয়া করে লাল তারা চিহ্নিত সকল ফিল্ড পূরণ করুন।");
+                return;
+            }
+
+            // Firebase Auth এর জন্য মোবাইলকে email ফরম্যাটে পরিবর্তন
+            const emailAsId = mobile + "@verifydomain.com"; 
+
+            auth.createUserWithEmailAndPassword(emailAsId, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    
+                    // Realtime Database এ অতিরিক্ত তথ্য সংরক্ষণ
+                    database.ref('sub_admin_requests/' + user.uid).set({
+                        name_bn: nameBn,
+                        nid: nid,
+                        mobile: mobile,
+                        account_type: document.getElementById('accountType').value, 
+                        upazila: upazila,
+                        address_type: addressType,
+                        status: 'Pending', // অনুমোদনের জন্য অপেক্ষারত
+                        created_at: firebase.database.ServerValue.TIMESTAMP
+                    })
+                    .then(() => {
+                        showSuccessMessage(nameBn);
+                    });
+                })
+                .catch((error) => {
+                    alert("নিবন্ধন ব্যর্থ: " + error.message);
+                });
+        }
+
+        // ---------- লগইন ফাংশন ----------
+        function loginSubAdmin() {
+            const mobile = document.getElementById('loginMobile').value;
+            const password = document.getElementById('loginPassword').value;
+            const emailAsId = mobile + "@verifydomain.com";
+
+            auth.signInWithEmailAndPassword(emailAsId, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    
+                    // Realtime Database থেকে ইউজারের স্ট্যাটাস চেক করা
+                    database.ref('sub_admin_requests/' + user.uid + '/status').once('value')
+                        .then((snapshot) => {
+                            const status = snapshot.val();
+                            
+                            if (status === 'Approved') {
+                                // ✔️ সফল লগইন: ব্যক্তিগত ড্যাশবোর্ডে রিডাইরেক্ট করুন
+                                window.location.href = 'sub-admin-dashboard.html'; 
+                            } else {
+                                // ❌ অনুমোদিত নয়: লগআউট করুন এবং মেসেজ দেখান
+                                auth.signOut();
+                                alert("আপনার অ্যাকাউন্টটি এখনও কর্তৃপক্ষের দ্বারা অনুমোদিত হয়নি।");
+                            }
+                        });
+                })
+                .catch((error) => {
+                    alert("লগইন ব্যর্থ: মোবাইল/পাসওয়ার্ড ভুল বা অ্যাকাউন্ট নেই।");
+                });
+        }
+        
+        // ---------- ইউটিলিটি ফাংশন ----------
+        function showSuccessMessage(name) {
+            document.getElementById('auth-panel').innerHTML = `
+                <div class="success-message">
+                    <h2>✨অভিনন্দন, ${name}!✨</h2>
+                    <p>আপনার আবেদন এখন -> 🧑‍💻 M²H. TUSAR _ COMPUTECH 💻 কর্তৃপক্ষের – নিকট অনুমোদনের জন্য অপেক্ষা করছে।</p>
+                    <p style="margin-top: 20px;">অ্যাকাউন্টটি অনুমোদিত/সক্রিয় হলে আপনাকে ইমেল বা মোবাইল নম্বরে মেসেজ পেরণ করা হবে।</p>
+                    <button onclick="window.location.reload()">পুনরায় লোড করুন</button>
+                </div>
+            `;
+        }
+
+        // পেজ লোড হওয়ার সাথে সাথে নিবন্ধন ফর্ম দেখান
+        window.onload = () => showForm('register');
+    </script>
+</body>
+  </html>
